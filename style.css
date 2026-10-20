@@ -1,0 +1,97 @@
+
+/* LA ROUE DE LA FOI */
+
+:root {
+  --fond: #171522;
+  --panneau: #242033;
+  --or: #e8bd67;
+  --texte: #f5f0e6;
+  --secondaire: #b7afc7;
+  --bordure: #49405d;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background:
+    radial-gradient(ellipse at top, #352546 0%, transparent 60%),
+    var(--fond);
+  color: var(--texte);
+  font-family: system-ui, sans-serif;
+}
+
+header {
+  text-align: center;
+  padding: 40px 18px 28px;
+}
+
+header h1 {
+  color: var(--or);
+  font-size: clamp(2rem, 7vw, 3.5rem);
+  margin: 0 0 12px;
+}
+
+header p {
+  color: var(--secondaire);
+  margin: 0;
+  line-height: 1.6;
+}
+
+main {
+  width: min(100% - 28px, 900px);
+  margin: 0 auto 40px;
+}
+
+section {
+  background: var(--panneau);
+  border: 1px solid var(--bordure);
+  border-radius: 18px;
+  padding: 22px;
+  margin-bottom: 18px;
+  box-shadow: 0 8px 25px #0003;
+}
+
+h2 {
+  color: var(--or);
+  margin-top: 0;
+}
+
+p {
+  line-height: 1.6;
+}
+
+button {
+  background: var(--or);
+  color: #211a27;
+  border: 0;
+  border-radius: 12px;
+  padding: 13px 18px;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+button:active {
+  transform: scale(0.97);
+}
+
+footer {
+  text-align: center;
+  color: var(--secondaire);
+  padding: 20px;
+  font-size: 0.85rem;
+}
+
+@media (max-width: 480px) {
+  header {
+    padding-top: 30px;
+  }
+
+  section {
+    padding: 17px;
+  }
+}
