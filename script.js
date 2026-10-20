@@ -1,7 +1,7 @@
 
 /* ==========================================
    LA ROUE DE LA FOI
-   Roues visuelles + sons + résumé personnage
+   Roues visuelles + sons compatibles iPhone
 ========================================== */
 
 const resultats = {};
@@ -11,85 +11,91 @@ const couleurs = [
   "#d49b36", "#9b59b6", "#d96c36", "#397d8c"
 ];
 
-/* ---------- SONS ---------- */
+/* ---------- SYSTÈME AUDIO ---------- */
 
 let contexteAudio = null;
 let dernierClicSon = 0;
+let audioDisponible = false;
 
-function obtenirAudio() {
+function activerAudio() {
+  const AudioAPI = window.AudioContext || window.webkitAudioContext;
+
+  if (!AudioAPI) {
+    console.warn("Ce navigateur ne prend pas en charge Web Audio.");
+    return Promise.resolve(false);
+  }
+
   if (!contexteAudio) {
-    const AudioAPI = window.AudioContext || window.webkitAudioContext;
-    if (!AudioAPI) return null;
     contexteAudio = new AudioAPI();
   }
 
-  if (contexteAudio.state === "suspended") {
-    contexteAudio.resume();
-  }
-
-  return contexteAudio;
+  return contexteAudio.resume()
+    .then(() => {
+      audioDisponible = contexteAudio.state === "running";
+      return audioDisponible;
+    })
+    .catch((erreur) => {
+      console.warn("Activation audio impossible :", erreur);
+      audioDisponible = false;
+      return false;
+    });
 }
 
-function jouerClic() {
-  const maintenant = performance.now();
+function creerSon(frequence, duree, type, volumeMax) {
+  if (!contexteAudio || contexteAudio.state !== "running") return;
 
-  // Limite le nombre de clics, même lorsque toutes les roues tournent.
-  if (maintenant - dernierClicSon < 75) return;
-  dernierClicSon = maintenant;
-
-  const audio = obtenirAudio();
-  if (!audio) return;
+  const audio = contexteAudio;
+  const debut = audio.currentTime;
 
   const oscillateur = audio.createOscillator();
   const volume = audio.createGain();
 
-  oscillateur.type = "square";
-  oscillateur.frequency.setValueAtTime(
-    1100 + Math.random() * 400,
-    audio.currentTime
-  );
+  oscillateur.type = type;
+  oscillateur.frequency.setValueAtTime(frequence, debut);
 
-  volume.gain.setValueAtTime(0.035, audio.currentTime);
+  volume.gain.setValueAtTime(0.001, debut);
+  volume.gain.linearRampToValueAtTime(volumeMax, debut + 0.005);
   volume.gain.exponentialRampToValueAtTime(
     0.001,
-    audio.currentTime + 0.025
+    debut + duree
   );
 
   oscillateur.connect(volume);
   volume.connect(audio.destination);
 
-  oscillateur.start();
-  oscillateur.stop(audio.currentTime + 0.025);
+  oscillateur.start(debut);
+  oscillateur.stop(debut + duree + 0.01);
+}
+
+function jouerClic() {
+  if (!audioDisponible) return;
+
+  const maintenant = performance.now();
+
+  // Limite les sons lorsque plusieurs roues tournent ensemble.
+  if (maintenant - dernierClicSon < 90) return;
+
+  dernierClicSon = maintenant;
+
+  creerSon(
+    1000 + Math.random() * 500,
+    0.035,
+    "square",
+    0.035
+  );
 }
 
 function jouerDing() {
-  const audio = obtenirAudio();
-  if (!audio) return;
+  if (!audioDisponible) return;
 
-  [660, 880].forEach((frequence, index) => {
-    const oscillateur = audio.createOscillator();
-    const volume = audio.createGain();
-    const debut = audio.currentTime + index * 0.12;
+  creerSon(880, 0.45, "sine", 0.18);
 
-    oscillateur.type = "sine";
-    oscillateur.frequency.setValueAtTime(frequence, debut);
-
-    volume.gain.setValueAtTime(0.001, debut);
-    volume.gain.linearRampToValueAtTime(0.14, debut + 0.025);
-    volume.gain.exponentialRampToValueAtTime(
-      0.001,
-      debut + 0.55
-    );
-
-    oscillateur.connect(volume);
-    volume.connect(audio.destination);
-
-    oscillateur.start(debut);
-    oscillateur.stop(debut + 0.55);
-  });
+  setTimeout(() => {
+    creerSon(1320, 0.55, "sine", 0.12);
+  }, 120);
 }
 
-/* ---------- AFFICHAGE ---------- */
+/* ---------- STRUCTURE DE LA PAGE ---------- */
 
 const sectionRoulettes = document.getElementById("roulettes");
 const sectionPersonnage = document.getElementById("personnage");
@@ -151,12 +157,14 @@ ROULETTES.forEach((roulette) => {
 
   dessinerRoue(roue, 0);
 
-  bouton.addEventListener("click", () => lancerRoue(roue));
+  bouton.addEventListener("click", () => {
+    lancerRoue(roue);
+  });
 
   roulette.roueVisuelle = roue;
 });
 
-/* ---------- DESSIN DES SECTEURS ---------- */
+/* ---------- DESSIN DE LA ROUE ---------- */
 
 function dessinerRoue(roue, angle) {
   const ctx = roue.contexte;
@@ -179,8 +187,10 @@ function dessinerRoue(roue, angle) {
     ctx.moveTo(0, 0);
     ctx.arc(0, 0, rayon, debut, fin);
     ctx.closePath();
+
     ctx.fillStyle = couleurs[index % couleurs.length];
     ctx.fill();
+
     ctx.strokeStyle = "#fff4";
     ctx.lineWidth = 2;
     ctx.stroke();
@@ -212,6 +222,7 @@ function dessinerRoue(roue, angle) {
   ctx.arc(0, 0, 23, 0, Math.PI * 2);
   ctx.fillStyle = "#171522";
   ctx.fill();
+
   ctx.lineWidth = 4;
   ctx.strokeStyle = "#e8bd67";
   ctx.stroke();
@@ -225,12 +236,13 @@ function dessinerRoue(roue, angle) {
   ctx.restore();
 }
 
-/* ---------- ANIMATION D'UNE ROUE ---------- */
+/* ---------- LANCEMENT D'UNE ROUE ---------- */
 
-function lancerRoue(roulette) {
+async function lancerRoue(roulette) {
   if (roulette.rotation) return;
 
-  obtenirAudio();
+  // L'activation est déclenchée par le clic de l'utilisateur.
+  await activerAudio();
 
   roulette.rotation = true;
   roulette.bouton.disabled = true;
@@ -240,18 +252,15 @@ function lancerRoue(roulette) {
     Math.random() * roulette.options.length
   );
 
-  const secteur = (Math.PI * 2) / roulette.options.length;
+  const tourComplet = Math.PI * 2;
+  const secteur = tourComplet / roulette.options.length;
 
-  /*
-   * Calcule l'angle final pour placer le centre
-   * du secteur choisi exactement sous le pointeur.
-   */
+  // Aligne le centre du résultat choisi avec le pointeur du haut.
   const angleCible =
-    (Math.PI * 2 - ((choixIndex + 0.5) * secteur) % (Math.PI * 2)) %
-    (Math.PI * 2);
+    (tourComplet - ((choixIndex + 0.5) * secteur) % tourComplet) %
+    tourComplet;
 
   const depart = roulette.angle;
-  const tourComplet = Math.PI * 2;
   const angleActuel = ((depart % tourComplet) + tourComplet) % tourComplet;
 
   let distance = angleCible - angleActuel;
@@ -260,15 +269,12 @@ function lancerRoue(roulette) {
     distance += tourComplet;
   }
 
-  // Plusieurs tours complets avant l'arrêt.
   const cible = depart + tourComplet * 5 + distance;
   const duree = 3200;
   const debut = performance.now();
 
   function animer(maintenant) {
     const progression = Math.min((maintenant - debut) / duree, 1);
-
-    // Ralentissement progressif en fin de rotation.
     const ralenti = 1 - Math.pow(1 - progression, 4);
     const angle = depart + (cible - depart) * ralenti;
 
@@ -295,9 +301,12 @@ function lancerRoue(roulette) {
   requestAnimationFrame(animer);
 }
 
-/* ---------- BOUTON TOUT LANCER ---------- */
+/* ---------- TOUT LANCER ---------- */
 
-document.getElementById("tout-lancer").addEventListener("click", () => {
+document.getElementById("tout-lancer").addEventListener("click", async () => {
+  // Active l'audio directement pendant le clic.
+  await activerAudio();
+
   ROULETTES.forEach((roulette) => {
     if (!roulette.roueVisuelle.rotation) {
       lancerRoue(roulette.roueVisuelle);
