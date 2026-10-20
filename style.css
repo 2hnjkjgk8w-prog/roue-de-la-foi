@@ -1,7 +1,7 @@
 
 /* ===================================
    LA ROUE DE LA FOI
-   Design des roulettes
+   Design général et fiche personnage
 =================================== */
 
 :root {
@@ -98,11 +98,7 @@ p {
   line-height: 1.65;
 }
 
-.intro {
-  color: var(--secondaire);
-  text-align: center;
-  margin-bottom: 22px;
-}
+/* ---------- BOUTONS ---------- */
 
 button {
   min-height: 46px;
@@ -139,6 +135,14 @@ button:disabled {
   margin: 0 auto 28px;
   padding: 15px 20px;
   font-size: 1.05rem;
+}
+
+/* ---------- ROULETTES ---------- */
+
+.intro {
+  color: var(--secondaire);
+  text-align: center;
+  margin-bottom: 22px;
 }
 
 .grille-roulettes {
@@ -219,26 +223,177 @@ button:disabled {
   padding: 11px 8px;
 }
 
+/* ---------- FICHE PERSONNAGE ---------- */
+
 #personnage {
-  border-color: #8e6ab0;
+  overflow: hidden;
+  padding: 0;
+  border: 1px solid #80639c;
+  background: #1b1728;
 }
 
-#message-personnage {
+.fiche-entete {
+  position: relative;
+  padding: 30px 18px 25px;
+  text-align: center;
+  background:
+    radial-gradient(ellipse at 50% 0%, #73508b 0%, transparent 75%),
+    linear-gradient(145deg, #342541, #211a30);
+  border-bottom: 1px solid #e8bd6755;
+}
+
+.fiche-symbole {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 54px;
+  height: 54px;
+  margin-bottom: 10px;
+  border: 1px solid var(--or);
+  border-radius: 50%;
+  color: var(--or-clair);
+  font-size: 28px;
+  box-shadow: 0 0 22px #e8bd6725;
+}
+
+.fiche-surtitre {
+  margin: 0 0 8px;
+  color: var(--or);
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 3px;
+}
+
+.fiche-entete h2 {
+  margin: 0 0 10px;
+  font-size: clamp(1.5rem, 6vw, 2rem);
+}
+
+.fiche-description {
+  margin: 0;
   color: var(--secondaire);
+  font-size: 0.9rem;
 }
 
-.ligne-personnage {
-  margin: 10px 0;
+.fiche-corps {
+  padding: 22px 18px;
+}
+
+.fiche-corps label {
+  display: block;
+  margin-bottom: 8px;
+  color: var(--or-clair);
+  font-weight: 700;
+}
+
+.champ-nom {
+  display: block;
+  width: 100%;
+  min-height: 48px;
   padding: 12px 14px;
   border: 1px solid var(--bordure);
   border-radius: 12px;
-  background: #ffffff06;
+  outline: none;
+  color: var(--texte);
+  background: #14111f;
+  font: inherit;
+}
+
+.champ-nom:focus {
+  border-color: var(--or);
+  box-shadow: 0 0 0 3px #e8bd6720;
+}
+
+.champ-nom::placeholder {
+  color: #9285a7;
+}
+
+.fiche-statut {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  margin: 18px 0 25px;
+  padding: 14px;
+  border-left: 3px solid var(--or);
+  border-radius: 0 10px 10px 0;
+  background: #e8bd670d;
+}
+
+.fiche-statut span {
+  color: var(--secondaire);
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 1.5px;
+}
+
+.fiche-statut strong {
+  color: var(--or-clair);
+}
+
+.titre-caracteristiques {
+  margin: 0 0 15px;
+  color: var(--or);
+  text-align: center;
+}
+
+.caracteristiques {
+  display: grid;
+  gap: 10px;
+}
+
+.caracteristique {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 14px;
+  border: 1px solid var(--bordure);
+  border-radius: 12px;
+  background: linear-gradient(110deg, #ffffff08, #ffffff02);
+}
+
+.caracteristique-nom {
+  color: var(--secondaire);
+  font-size: 0.82rem;
+}
+
+.caracteristique-valeur {
+  color: var(--or-clair);
+  font-size: 1.05rem;
   overflow-wrap: anywhere;
 }
 
-.ligne-personnage strong {
-  color: var(--or-clair);
+.fiche-vide {
+  padding: 18px 12px;
+  border: 1px dashed var(--bordure);
+  border-radius: 12px;
+  color: var(--secondaire);
+  text-align: center;
 }
+
+.bouton-fiche,
+.bouton-secondaire {
+  display: block;
+  width: 100%;
+  margin-top: 14px;
+}
+
+.bouton-secondaire {
+  border-color: var(--bordure);
+  color: var(--texte);
+  background: var(--panneau-clair);
+  box-shadow: none;
+}
+
+.message-copie {
+  min-height: 24px;
+  margin-bottom: 0;
+  color: var(--or-clair);
+  text-align: center;
+  font-size: 0.85rem;
+  overflow-wrap: anywhere;
+}
+
+/* ---------- PIED DE PAGE ---------- */
 
 footer {
   padding: 22px 16px 30px;
@@ -247,6 +402,8 @@ footer {
   text-align: center;
   font-size: 0.9rem;
 }
+
+/* ---------- MOBILE ---------- */
 
 @media (max-width: 600px) {
   header {
@@ -278,6 +435,14 @@ footer {
 
   .bouton-lancer {
     min-height: 48px;
+  }
+
+  #personnage {
+    padding: 0;
+  }
+
+  .fiche-corps {
+    padding: 18px 14px;
   }
 }
 
