@@ -1,14 +1,55 @@
 
 /* ==========================================
    LA ROUE DE LA FOI
-   Roues, sons et fiche de personnage
+   Roues, sons, fiche, statistiques et rareté
 ========================================== */
 
 const resultats = {};
+let statsPersonnage = null;
+let raretePersonnage = null;
 
 const couleurs = [
   "#7c4dff", "#d94f70", "#3478c9", "#249b83",
   "#d49b36", "#9b59b6", "#d96c36", "#397d8c"
+];
+
+const statistiques = [
+  { id: "attaque", nom: "Attaque", symbole: "⚔️" },
+  { id: "defense", nom: "Défense", symbole: "🛡️" },
+  { id: "magie", nom: "Magie", symbole: "🔮" },
+  { id: "vitesse", nom: "Vitesse", symbole: "💨" },
+  { id: "chance", nom: "Chance", symbole: "🍀" }
+];
+
+const niveauxRarete = [
+  {
+    nom: "Commun",
+    symbole: "⚪",
+    couleur: "#b8b8c5",
+    poids: 50,
+    description: "Le destin n'a pas fait d'effort particulier."
+  },
+  {
+    nom: "Rare",
+    symbole: "🔵",
+    couleur: "#5da9ff",
+    poids: 30,
+    description: "Un personnage qui sort du lot."
+  },
+  {
+    nom: "Épique",
+    symbole: "🟣",
+    couleur: "#c084fc",
+    poids: 15,
+    description: "Une existence qui mérite qu'on s'y intéresse."
+  },
+  {
+    nom: "Légendaire",
+    symbole: "🟡",
+    couleur: "#ffd166",
+    poids: 5,
+    description: "Le destin a clairement ses favoris."
+  }
 ];
 
 /* ---------- SYSTÈME AUDIO ---------- */
@@ -19,7 +60,6 @@ let audioDisponible = false;
 
 function activerAudio() {
   const AudioAPI = window.AudioContext || window.webkitAudioContext;
-
   if (!AudioAPI) return Promise.resolve(false);
 
   if (!contexteAudio) {
@@ -54,7 +94,6 @@ function creerSon(frequence, duree, type, volumeMax) {
 
   oscillateur.connect(volume);
   volume.connect(audio.destination);
-
   oscillateur.start(debut);
   oscillateur.stop(debut + duree + 0.01);
 }
@@ -63,17 +102,10 @@ function jouerClic() {
   if (!audioDisponible) return;
 
   const maintenant = performance.now();
-
   if (maintenant - dernierClicSon < 90) return;
 
   dernierClicSon = maintenant;
-
-  creerSon(
-    1000 + Math.random() * 500,
-    0.035,
-    "square",
-    0.035
-  );
+  creerSon(1000 + Math.random() * 500, 0.035, "square", 0.035);
 }
 
 function jouerDing() {
@@ -84,6 +116,45 @@ function jouerDing() {
   setTimeout(() => {
     creerSon(1320, 0.55, "sine", 0.12);
   }, 120);
+}
+
+/* ---------- GÉNÉRATION DES STATS ET DE LA RARETÉ ---------- */
+
+function genererStatistiques() {
+  const stats = {};
+
+  statistiques.forEach((stat) => {
+    stats[stat.id] = Math.floor(Math.random() * 81) + 20;
+  });
+
+  return stats;
+}
+
+function tirerRarete() {
+  const tirage = Math.random() * 100;
+  let cumul = 0;
+
+  for (const rarete of niveauxRarete) {
+    cumul += rarete.poids;
+
+    if (tirage < cumul) {
+      return rarete;
+    }
+  }
+
+  return niveauxRarete[0];
+}
+
+function initialiserDestin() {
+  if (Object.keys(resultats).length !== ROULETTES.length) return;
+
+  if (!statsPersonnage) {
+    statsPersonnage = genererStatistiques();
+  }
+
+  if (!raretePersonnage) {
+    raretePersonnage = tirerRarete();
+  }
 }
 
 /* ---------- STRUCTURE DE LA PAGE ---------- */
@@ -114,7 +185,6 @@ sectionPersonnage.innerHTML = `
 
   <div class="fiche-corps">
     <label for="nom-personnage">Nom du personnage</label>
-
     <input
       id="nom-personnage"
       class="champ-nom"
@@ -125,10 +195,10 @@ sectionPersonnage.innerHTML = `
 
     <div class="fiche-statut">
       <span>ÉTAT DU DESTIN</span>
-      <strong id="message-personnage">
-        En attente de création
-      </strong>
+      <strong id="message-personnage">En attente de création</strong>
     </div>
+
+    <div id="rarete-personnage"></div>
 
     <h3 class="titre-caracteristiques">
       ✧ Caractéristiques ✧
@@ -137,6 +207,20 @@ sectionPersonnage.innerHTML = `
     <div id="resume-personnage" class="caracteristiques">
       <p class="fiche-vide">
         Les roulettes doivent parler avant que votre légende commence.
+      </p>
+    </div>
+
+    <h3 class="titre-caracteristiques" style="margin-top:28px">
+      📊 Statistiques de combat
+    </h3>
+
+    <p style="color:#bdb2d1;text-align:center;font-size:.85rem">
+      Valeurs générées entre 20 et 100.
+    </p>
+
+    <div id="stats-personnage" style="display:grid;gap:13px">
+      <p class="fiche-vide">
+        Les statistiques seront révélées lorsque toutes les roues auront parlé.
       </p>
     </div>
 
@@ -155,6 +239,8 @@ sectionPersonnage.innerHTML = `
 const listeRoulettes = document.getElementById("liste-roulettes");
 const resumePersonnage = document.getElementById("resume-personnage");
 const champNom = document.getElementById("nom-personnage");
+const statsElement = document.getElementById("stats-personnage");
+const rareteElement = document.getElementById("rarete-personnage");
 
 /* ---------- COPIER LA FICHE ---------- */
 
@@ -173,6 +259,34 @@ document.getElementById("copier-fiche").addEventListener("click", async () => {
     );
   });
 
+  lignes.push("");
+  lignes.push("💎 RARETÉ");
+
+  if (raretePersonnage) {
+    lignes.push(`${raretePersonnage.symbole} ${raretePersonnage.nom}`);
+    lignes.push(raretePersonnage.description);
+  } else {
+    lignes.push("Non déterminée");
+  }
+
+  lignes.push("");
+  lignes.push("📊 STATISTIQUES");
+
+  if (statsPersonnage) {
+    statistiques.forEach((stat) => {
+      lignes.push(`${stat.nom} : ${statsPersonnage[stat.id]}/100`);
+    });
+
+    const totalStats = statistiques.reduce(
+      (somme, stat) => somme + statsPersonnage[stat.id],
+      0
+    );
+
+    lignes.push(`Total : ${totalStats}/500`);
+  } else {
+    lignes.push("Non déterminées");
+  }
+
   const texte = lignes.join("\n");
   const message = document.getElementById("message-copie");
 
@@ -185,7 +299,6 @@ document.getElementById("copier-fiche").addEventListener("click", async () => {
 
     message.textContent = "✨ Fiche copiée ! Tu peux la coller où tu veux.";
   } catch (erreur) {
-    // Solution de secours pour les navigateurs qui bloquent le presse-papiers.
     const zone = document.createElement("textarea");
     zone.value = texte;
     zone.setAttribute("readonly", "");
@@ -250,7 +363,6 @@ ROULETTES.forEach((roulette) => {
   };
 
   dessinerRoue(roue, 0);
-
   bouton.addEventListener("click", () => lancerRoue(roue));
 
   roulette.roueVisuelle = roue;
@@ -309,7 +421,6 @@ function dessinerRoue(roue, angle) {
     ctx.restore();
   });
 
-  // Centre décoratif
   ctx.beginPath();
   ctx.arc(0, 0, 23, 0, Math.PI * 2);
   ctx.fillStyle = "#171522";
@@ -346,7 +457,6 @@ async function lancerRoue(roulette) {
   const tourComplet = Math.PI * 2;
   const secteur = tourComplet / roulette.options.length;
 
-  // Place le centre du secteur choisi sous le pointeur.
   const angleCible =
     (tourComplet - ((choixIndex + 0.5) * secteur) % tourComplet) %
     tourComplet;
@@ -380,10 +490,10 @@ async function lancerRoue(roulette) {
       roulette.bouton.disabled = false;
 
       const choix = roulette.options[choixIndex];
-
       resultats[roulette.id] = choix;
       roulette.resultatElement.textContent = `✨ ${choix}`;
 
+      initialiserDestin();
       jouerDing();
       afficherPersonnage();
     }
@@ -418,7 +528,11 @@ document.getElementById("nouveau-personnage").addEventListener("click", async ()
       "❔ En attente du destin...";
   });
 
+  statsPersonnage = null;
+  raretePersonnage = null;
+
   document.getElementById("message-copie").textContent = "";
+
   afficherPersonnage();
 
   ROULETTES.forEach((roulette) => {
@@ -449,24 +563,166 @@ function afficherPersonnage() {
       "Les roulettes doivent parler avant que votre légende commence.";
 
     resumePersonnage.appendChild(vide);
+  } else {
+    ROULETTES.forEach((roulette) => {
+      if (!resultats[roulette.id]) return;
+
+      const carte = document.createElement("div");
+      carte.className = "caracteristique";
+
+      const nom = document.createElement("span");
+      nom.className = "caracteristique-nom";
+      nom.textContent = roulette.nom;
+
+      const valeur = document.createElement("strong");
+      valeur.className = "caracteristique-valeur";
+      valeur.textContent = resultats[roulette.id];
+
+      carte.append(nom, valeur);
+      resumePersonnage.appendChild(carte);
+    });
+  }
+
+  afficherRarete();
+  afficherStatistiques();
+}
+
+/* ---------- AFFICHAGE DE LA RARETÉ ---------- */
+
+function afficherRarete() {
+  rareteElement.innerHTML = "";
+
+  if (!raretePersonnage) {
+    const attente = document.createElement("p");
+    attente.className = "fiche-vide";
+    attente.textContent = "💎 La rareté sera révélée à la fin du tirage.";
+    rareteElement.appendChild(attente);
     return;
   }
 
-  ROULETTES.forEach((roulette) => {
-    if (!resultats[roulette.id]) return;
+  const carte = document.createElement("div");
+  carte.style.cssText = `
+    margin: 20px 0;
+    padding: 18px;
+    text-align: center;
+    border: 2px solid ${raretePersonnage.couleur};
+    border-radius: 16px;
+    background: ${raretePersonnage.couleur}12;
+    box-shadow: 0 0 22px ${raretePersonnage.couleur}20;
+  `;
 
-    const carte = document.createElement("div");
-    carte.className = "caracteristique";
+  const titre = document.createElement("p");
+  titre.textContent = "💎 NIVEAU DE RARETÉ";
+  titre.style.cssText = `
+    margin: 0 0 8px;
+    color: #bdb2d1;
+    font-size: .75rem;
+    font-weight: 800;
+    letter-spacing: 2px;
+  `;
+
+  const nom = document.createElement("strong");
+  nom.textContent = `${raretePersonnage.symbole} ${raretePersonnage.nom}`;
+  nom.style.cssText = `
+    display: block;
+    color: ${raretePersonnage.couleur};
+    font-family: Georgia, serif;
+    font-size: 1.6rem;
+    margin-bottom: 8px;
+  `;
+
+  const description = document.createElement("p");
+  description.textContent = raretePersonnage.description;
+  description.style.cssText = `
+    margin: 0;
+    color: #bdb2d1;
+    font-size: .9rem;
+  `;
+
+  carte.append(titre, nom, description);
+  rareteElement.appendChild(carte);
+}
+
+/* ---------- AFFICHAGE DES STATISTIQUES ---------- */
+
+function afficherStatistiques() {
+  statsElement.innerHTML = "";
+
+  if (!statsPersonnage) {
+    const attente = document.createElement("p");
+    attente.className = "fiche-vide";
+    attente.textContent =
+      "Les statistiques seront révélées lorsque toutes les roues auront parlé.";
+
+    statsElement.appendChild(attente);
+    return;
+  }
+
+  statistiques.forEach((stat) => {
+    const valeur = statsPersonnage[stat.id];
+
+    const ligne = document.createElement("div");
+    ligne.style.cssText = `
+      padding: 12px;
+      border: 1px solid #514268;
+      border-radius: 12px;
+      background: #ffffff05;
+    `;
+
+    const entete = document.createElement("div");
+    entete.style.cssText = `
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 8px;
+    `;
 
     const nom = document.createElement("span");
-    nom.className = "caracteristique-nom";
-    nom.textContent = roulette.nom;
+    nom.textContent = `${stat.symbole} ${stat.nom}`;
+    nom.style.color = "#f8f3ff";
 
-    const valeur = document.createElement("strong");
-    valeur.className = "caracteristique-valeur";
-    valeur.textContent = resultats[roulette.id];
+    const chiffre = document.createElement("strong");
+    chiffre.textContent = `${valeur}/100`;
+    chiffre.style.color = "#ffe6a6";
 
-    carte.append(nom, valeur);
-    resumePersonnage.appendChild(carte);
+    const fondBarre = document.createElement("div");
+    fondBarre.style.cssText = `
+      height: 10px;
+      overflow: hidden;
+      border-radius: 99px;
+      background: #514268;
+    `;
+
+    const barre = document.createElement("div");
+    barre.style.cssText = `
+      width: ${valeur}%;
+      height: 100%;
+      border-radius: 99px;
+      background: linear-gradient(90deg, #7c4dff, #f1c66d);
+      transition: width .4s ease;
+    `;
+
+    fondBarre.appendChild(barre);
+    entete.append(nom, chiffre);
+    ligne.append(entete, fondBarre);
+    statsElement.appendChild(ligne);
   });
+
+  const total = statistiques.reduce(
+    (somme, stat) => somme + statsPersonnage[stat.id],
+    0
+  );
+
+  const totalElement = document.createElement("p");
+  totalElement.textContent = `✦ Puissance totale : ${total}/500`;
+  totalElement.style.cssText = `
+    margin: 8px 0 0;
+    color: #f1c66d;
+    text-align: center;
+    font-weight: 800;
+    font-size: 1.05rem;
+  `;
+
+  statsElement.appendChild(totalElement);
 }
